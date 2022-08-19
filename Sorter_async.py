@@ -1,10 +1,10 @@
-import concurrent.futures
-import aioshutil
 import re
 from pathlib import Path
 from typing import Dict, List
 import asyncio
 from aiopath import AsyncPath
+from shutil import unpack_archive
+from aiofiles.os import wrap
 
 
 CYRILLIC_SYMBOLS = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюяєіїґ'
@@ -55,15 +55,13 @@ MAPPING = {
 }
 
 
+unpac_arch = wrap(unpack_archive)  # обернул синхронную функцию в асинхронную.
+
+
 async def handle_archive(filename: AsyncPath, archive_folder: AsyncPath):
     folder_for_file = archive_folder / normalize(filename.name.replace(filename.suffix, ''))
     await folder_for_file.mkdir(exist_ok=True, parents=True)
-    try:
-        await aioshutil.unpack_archive(await filename.resolve(), await folder_for_file.resolve())
-    except aioshutil.Error:
-        print(f'This file is not archive:{filename}!')
-        await folder_for_file.rmdir()
-        return None
+    await unpac_arch(filename, folder_for_file)
     await filename.unlink()
 
 
